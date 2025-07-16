@@ -1,0 +1,14 @@
+requests
+beautifulsoup4
+minio
+delta-spark
+pyspark
+sentence-transformers
+faiss-cpu
+fastapi
+uvicorn
+python-dotenv
+duckdb
+pytest
+apache-airflow
+ollama
