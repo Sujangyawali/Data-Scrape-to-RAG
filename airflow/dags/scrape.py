@@ -1,7 +1,12 @@
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import PythonOperator
 from datetime import datetime
-# from src.scrapper import scrape_gutenberg
+import os
+import sys
+sys.path.append('/opt/airflow/src')
+print(f"sys.path:", sys.path)
+from scraper import scrape_gutenberg
 
 with DAG(
     'scrape_dag',
@@ -13,13 +18,13 @@ with DAG(
     task_id='start'
 )
     
-    # scrape_task = PythonOperator(
-    #     task_id='scrape',
-    #     python_callable=scrape_gutenberg
-    # )
+    scrape_task = PythonOperator(
+        task_id='scrape',
+        python_callable=scrape_gutenberg
+    )
     
     end_task = EmptyOperator(
     task_id='end'
 )
     
-    start_task >> end_task
+    start_task >> scrape_task >> end_task

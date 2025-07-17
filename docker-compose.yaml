@@ -49,6 +49,7 @@ services:
       - ./src:/opt/airflow/src
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
+      - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
     ports:
       - "8080:8080"
     command: >
@@ -71,6 +72,7 @@ services:
       - ./src:/opt/airflow/src
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
+      - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
     command: airflow scheduler
   airflow-worker:
     image: apache/airflow:2.9.3
@@ -90,6 +92,7 @@ services:
       - ./src:/opt/airflow/src
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
+      - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
     command: airflow celery worker
   api:
     build: .
