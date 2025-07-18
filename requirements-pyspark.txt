@@ -1,10 +1,3 @@
 minio
 pyspark
-delta-spark
 PyYAML
-sentence-transformers
-faiss-cpu
-numpy
-requests
-uvicorn
-fastapi

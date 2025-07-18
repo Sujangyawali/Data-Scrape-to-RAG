@@ -157,7 +157,6 @@ services:
     command: >
       bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
                   python3 /opt/spark/src/transform.py bronze_to_silver &&
-                  python3 /opt/spark/src/embed.py generate_embeddings &&
                   tail -f /dev/null"
 volumes:
   minio_data:

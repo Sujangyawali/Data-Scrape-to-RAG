@@ -47,7 +47,7 @@ async def ask_question(request: QuestionRequest):
     
     # Generate query embedding and retrieve context
     query_embedding = model.encode([question])
-    distances, indices = index.search(query_embedding, k=3)  # Retrieve top 2 chunks
+    distances, indices = index.search(query_embedding, k=3)  
     retrieved_indices = indices[0]
     
     # Construct context from chunks
