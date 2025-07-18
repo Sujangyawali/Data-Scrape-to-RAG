@@ -89,6 +89,7 @@ The following diagram illustrates the architecture of the framework:
    This will load data into 'Data-Scrape-to-RAG\data\silver\books'
 
    - Trigger Scrape Dag
+   - create data\silver directory
    - After completion of scrape Re-start pyspark service to load data locally    
    In the later pahase this will be handled properly
 
