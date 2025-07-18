@@ -9,7 +9,7 @@ print(f"sys.path:", sys.path)
 from scraper import scrape_gutenberg
 
 with DAG(
-    'scrape_dag',
+    'scrape',
     start_date=datetime(2025, 7, 16),
     schedule_interval=None,
     catchup=False
@@ -17,14 +17,14 @@ with DAG(
     start_task = EmptyOperator(
     task_id='start'
 )
-    
+
     scrape_task = PythonOperator(
         task_id='scrape',
         python_callable=scrape_gutenberg
     )
-    
+
     end_task = EmptyOperator(
     task_id='end'
 )
-    
+
     start_task >> scrape_task >> end_task

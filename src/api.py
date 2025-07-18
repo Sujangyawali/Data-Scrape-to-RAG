@@ -1,53 +1,60 @@
 from fastapi import FastAPI
 from sentence_transformers import SentenceTransformer
 import faiss
-import json
 import numpy as np
-from ollama import Client
-from pyspark.sql import SparkSession
 import yaml
 import os
+import json
+import requests
 from dotenv import load_dotenv
 
+app = FastAPI()
 load_dotenv()
 
-app = FastAPI()
+# Load config and model
+with open('/app/sample_config/config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
 model = SentenceTransformer('all-MiniLM-L6-v2')
-index = faiss.read_index("vector_index.faiss")
-with open("metadata.json", "r") as f:
+
+# Load FAISS index and metadata
+index = faiss.read_index("/app/data/vector_index.faiss")
+with open("/app/data/metadata.json", 'r', encoding='utf-8') as f:
     metadata = json.load(f)
 
-# Initialize Ollama client
-ollama_client = Client(host='http://ollama:11434')
+# Load texts from silver directory (for embedding lookup)
+silver_dir = "/app/data/silver"
+text_files = [os.path.join(silver_dir, f) for f in os.listdir(silver_dir) if f.endswith('.txt')]
+texts = []
+for file_path in text_files:
+    with open(file_path, 'r', encoding='utf-8') as f:
+        texts.append(f.read())
 
-# Load Spark for accessing Gold layer
-with open('sample_config/config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-spark = SparkSession.builder.appName("RAG").getOrCreate()
-gold_df = spark.read.format("delta").load(f"s3a://{config['minio']['bucket_gold']}/gold")
-
-@app.get("/ask")
-async def ask(query: str):
-    # Find relevant documents using FAISS
-    query_embedding = model.encode([query])[0]
-    _, indices = index.search(np.array([query_embedding]), k=2)
+@app.post("/ask")
+async def ask_question(question: str):
+    # Generate query embedding
+    query_embedding = model.encode([question])
     
-    # Retrieve text from Gold layer
-    results = []
-    for i in indices[0]:
-        source = metadata[str(i)]
-        # Query Spark to get the full text for the source
-        text_row = gold_df.filter(f"source = '{source}'").select("text").collect()
-        text = text_row[0]["text"] if text_row else "Text not found"
-        results.append({"source": source, "text": text[:500]})  # Truncate for brevity
+    # Retrieve top 3 similar documents
+    distances, indices = index.search(query_embedding, k=3)
+    retrieved_indices = indices[0]
+    retrieved_context = " ".join([texts[i] for i in retrieved_indices if i < len(texts)])
     
-    # Generate answer using Ollama
-    context = "\n".join([r["text"] for r in results])
-    prompt = f"Based on the following context, answer the query: {query}\n\nContext:\n{context}"
-    response = ollama_client.generate(model='mistral', prompt=prompt)
-    
-    return {
-        "query": query,
-        "answer": response['response'],
-        "sources": [r["source"] for r in results]
+    # Query Ollama
+    ollama_url = "http://ollama:11434/api/generate"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": "llama3",  # Adjust based on your Ollama model
+        "prompt": f"Based on this context: {retrieved_context}\n\nQuestion: {question}",
+        "stream": False
     }
+    response = requests.post(ollama_url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        result = response.json()
+        return {"question": question, "answer": result.get("response", "No response"), "sources": [metadata.get(str(i), "Unknown") for i in retrieved_indices if i < len(texts)]}
+    else:
+        return {"question": question, "error": f"Ollama Error: {response.status_code} - {response.text}"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -11,6 +11,11 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
   postgres:
     image: postgres:13
     environment:
@@ -33,6 +38,8 @@ services:
     image: apache/airflow:2.9.3
     restart: always
     depends_on:
+      minio:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -50,14 +57,20 @@ services:
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
+      - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
     ports:
       - "8080:8080"
     command: >
-      bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com && airflow webserver --port 8080"
+        bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
+                 airflow db migrate &&
+                 airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com &&
+                 airflow webserver --port 8080"
   airflow-scheduler:
     image: apache/airflow:2.9.3
     restart: always
     depends_on:
+      minio:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -73,11 +86,16 @@ services:
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
-    command: airflow scheduler
+      - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
+    command: >
+        bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
+                 airflow scheduler"
   airflow-worker:
     image: apache/airflow:2.9.3
     restart: always
     depends_on:
+      minio:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -93,7 +111,12 @@ services:
       - ./sample_config:/opt/airflow/sample_config
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
-    command: airflow celery worker
+      - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
+    command: >
+        bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
+                 airflow celery worker"
+    
+  
   api:
     build: .
     ports:
@@ -112,6 +135,30 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     command: serve
+  pyspark:
+    image: bitnami/spark:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    env_file:
+      - ./.env
+    volumes:
+      - ./src:/opt/spark/src
+      - ./sample_config:/opt/spark/sample_config
+      - ./.env:/opt/spark/.env
+      - ./requirements-pyspark.txt:/opt/spark/requirements-pyspark.txt
+      - ./data:/opt/spark/data 
+    command: >
+      bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
+                  python3 /opt/spark/src/transform.py bronze_to_silver &&
+                  python3 /opt/spark/src/embed.py generate_embeddings &&
+                  tail -f /dev/null"
 volumes:
   minio_data:
   postgres_data:
