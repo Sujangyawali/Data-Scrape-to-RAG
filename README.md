@@ -64,13 +64,6 @@ The following diagram illustrates the architecture of the framework:
 - **Together AI** (Create free acount and get API key. It won't cost for running opensource model : [Together AI](https://www.together.ai/))
 
 
-If you're a student, you can implement this framework with minimal cost. Here's what you'll need:
-- **Python 3.10 or above**
-- **Snowflake** (Free Trial account: [Snowflake Free Trial](https://www.snowflake.com/free-trial/))
-- **AWS** (Free tier covers EC2 and S3, but Airflow and VPC services incur charges: [AWS Free Tier](https://aws.amazon.com/free/))
-- **RapidAPI** (Free tier is sufficient: [RapidAPI](https://rapidapi.com/))
-- **Tableau Public** (Free: [Tableau Public](https://public.tableau.com/en-us/s/))
-
 
 ### Installation
 
