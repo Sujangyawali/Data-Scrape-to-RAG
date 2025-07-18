@@ -76,8 +76,8 @@ If you're a student, you can implement this framework with minimal cost. Here's 
 
 1. **Clone the Repository**:
    ```bash
-   git clone <repository-url>
-   cd <repository-directory>
+   git clone https://github.com/Sujangyawali/Data-Scrape-to-RAG.git
+   cd Data-Scrape-to-RAG
    ```
 2. **Configure Environment**:
    Create a `.env` file in the project root with Together AI API key and connetion details to connect MINIO.Ycan use existing .env in repo for local run.
@@ -93,6 +93,7 @@ If you're a student, you can implement this framework with minimal cost. Here's 
    ```bash
    docker-compose up -d
    ```
+   This will load data into 'Data-Scrape-to-RAG\data\silver\books'
 
 4. **Create a Virtual Environment**:
    ```bash
@@ -103,15 +104,20 @@ If you're a student, you can implement this framework with minimal cost. Here's 
 5. **Install Dependencies**:
    Install the required Python packages:
    ```bash
-   pip install requirements-local.txt
+   pip install -r requirements-local.txt
    ```
-
+6. **Create Vector DB and Embeddings**:   
+   (Note:For quick check you can keep only few files having low size.)
+   ```bash
+   python embeddings.py
+   ```
+   
 
 ## Configuration
 
 ### Running the Application
 1. **Start the FastAPI Backend**:
-   - In one terminal, run the backend server:
+   - In one terminal(after activation virtual environment and instllation libraries), run the backend server:
      ```bash
      python api.py
      ```
