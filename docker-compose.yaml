@@ -51,6 +51,9 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
       - AIRFLOW__CORE__PARALLELISM=2
       - AIRFLOW__CORE__MAX_ACTIVE_RUNS=1
+      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_NAMESPACE=airflow-etl
+      - OPENLINEAGE_DISABLED="false"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -81,6 +84,9 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_NAMESPACE=airflow-etl
+      - OPENLINEAGE_DISABLED="false"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -107,6 +113,9 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
+      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_NAMESPACE=airflow-etl
+      - OPENLINEAGE_DISABLED="false"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -119,49 +128,75 @@ services:
         bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
                  airflow celery worker"
     
-  
-  api:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./src:/app/src
-      - ./.env:/app/.env
-    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
-    depends_on:
-      - minio
-      - ollama
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    command: serve
-  pyspark:
-    image: bitnami/spark:latest
-    depends_on:
-      minio:
-        condition: service_healthy
+  # api:
+  #   build: .
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./.env:/app/.env
+  #   command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+  #   depends_on:
+  #     - minio
+  #     - ollama
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   command: serve
+  # pyspark:
+  #   image: bitnami/spark:latest
+  #   depends_on:
+  #     minio:
+  #       condition: service_healthy
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   env_file:
+  #     - ./.env
+  #   volumes:
+  #     - ./src:/opt/spark/src
+  #     - ./sample_config:/opt/spark/sample_config
+  #     - ./.env:/opt/spark/.env
+  #     - ./requirements-pyspark.txt:/opt/spark/requirements-pyspark.txt
+  #     - ./data:/opt/spark/data 
+  #   command: >
+  #     bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
+  #                 tail -f /dev/null"
+  marquez-db:
+    image: postgres:13
     environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-    env_file:
-      - ./.env
+      - POSTGRES_DB=marquez
+      - POSTGRES_USER=marquez
+      - POSTGRES_PASSWORD=marquez
     volumes:
-      - ./src:/opt/spark/src
-      - ./sample_config:/opt/spark/sample_config
-      - ./.env:/opt/spark/.env
-      - ./requirements-pyspark.txt:/opt/spark/requirements-pyspark.txt
-      - ./data:/opt/spark/data 
-    command: >
-      bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
-                  tail -f /dev/null"
+      - ./marquez_db_data:/var/lib/postgresql/data
+
+  marquez:
+    image: marquezproject/marquez:latest
+    depends_on:
+      - marquez-db
+    environment:
+      - MARQUEZ_URL=http://marquez:5000
+      - MARQUEZ_JDBC_URL=jdbc:postgresql://marquez-db:5432/marquez
+      - MARQUEZ_JDBC_USERNAME=marquez
+      - MARQUEZ_JDBC_PASSWORD=marquez
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 10
 volumes:
   minio_data:
   postgres_data:
   redis_data:
   ollama_data:
+  marquez_data:
