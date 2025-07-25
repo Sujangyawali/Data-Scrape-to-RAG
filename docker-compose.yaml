@@ -58,6 +58,7 @@ services:
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
       - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8080:8080"
     command: >
@@ -87,6 +88,7 @@ services:
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
       - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
+      - /var/run/docker.sock:/var/run/docker.sock
     command: >
         bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
                  airflow scheduler"
@@ -112,6 +114,7 @@ services:
       - ./.env:/opt/airflow/.env
       - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
       - ./requirements-airflow.txt:/opt/airflow/requirements-airflow.txt
+      - /var/run/docker.sock:/var/run/docker.sock
     command: >
         bash -c "pip install --no-cache-dir -r /opt/airflow/requirements-airflow.txt &&
                  airflow celery worker"
@@ -156,8 +159,6 @@ services:
       - ./data:/opt/spark/data 
     command: >
       bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
-                  python3 /opt/spark/src/transform.py bronze_to_silver &&
-                  python3 /opt/spark/src/embed.py generate_embeddings &&
                   tail -f /dev/null"
 volumes:
   minio_data:
