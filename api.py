@@ -95,7 +95,8 @@ async def ask_question(request: QuestionRequest):
     if response.status_code == 200:
         result = response.json()
         answer = result.get("choices", [{}])[0].get("message", {}).get("content", "No response")
-        sources = [metadata.get(str(i), "Unknown") for i in retrieved_indices if i < len(texts)]
+        # Extract distinct text_url from metadata for each retrieved index
+        sources = list({metadata.get(str(i), {}).get("text_url", "Unknown") for i in retrieved_indices if i < len(texts)})
         return {"question": question, "answer": answer, "sources": sources}
     else:
         return {"question": question, "error": f"Together AI Error: {response.status_code} - {response.text}"}

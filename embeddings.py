@@ -5,6 +5,9 @@ import numpy as np
 import os
 import json
 from dotenv import load_dotenv
+from minio import Minio
+import pandas as pd
+import io
 
 # Load environment variables
 load_dotenv()
@@ -12,32 +15,57 @@ load_dotenv()
 # Load model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Directory for input documents
-silver_dir = "data/silver/books"
-if not os.path.exists(silver_dir):
-    os.makedirs(silver_dir, exist_ok=True)
-    raise ValueError(f"Directory {silver_dir} does not exist. Please create it and add .txt files.")
+# Initialize MinIO client
+client = Minio(
+    'localhost:9000',
+    access_key=os.getenv('MINIO_ACCESS_KEY'),
+    secret_key=os.getenv('MINIO_SECRET_KEY'),
+    secure=False
+)
+
+# Gold bucket and folder details
+gold_bucket = "gold"
+books_folder = "books"
+
+# List all CSV files in the books folder
+try:
+    objects = client.list_objects(gold_bucket, prefix=f"{books_folder}/", recursive=True)
+    csv_files = [obj.object_name for obj in objects if obj.object_name.endswith('.csv')]
+    if not csv_files:
+        raise ValueError(f"No CSV files found in {gold_bucket}/{books_folder}/")
+except Exception as e:
+    raise ValueError(f"Failed to list objects in MinIO: {e}")
 
 # Chunking parameters
 chunk_size = 500  
 chunk_overlap = 50 
 
-# Load and chunk documents
+# Load and chunk documents from all CSV files
 texts = []
 sources = []
-for file_path in os.listdir(silver_dir):
-    if file_path.endswith('.txt'):
-        with open(os.path.join(silver_dir, file_path), 'r', encoding='utf-8') as f:
-            content = f.read().strip()
+text_urls = []
+for csv_file in csv_files:
+    try:
+        response = client.get_object(gold_bucket, csv_file)
+        csv_data = response.read()
+        response.close()
+        df = pd.read_csv(io.BytesIO(csv_data))
+        
+        for index, row in df.iterrows():
+            content = str(row['content']).strip()
             if content:
                 words = content.split()
                 for i in range(0, len(words) - chunk_size + 1, chunk_size - chunk_overlap):
                     chunk = " ".join(words[i:i + chunk_size])
                     texts.append(chunk)
-                    sources.append(f"{file_path}_chunk_{i//(chunk_size - chunk_overlap)}")
+                    sources.append(f"{os.path.basename(csv_file).replace('.csv', '')}_chunk_{i//(chunk_size - chunk_overlap)}")
+                    text_urls.append(row['text_url'])
+    except Exception as e:
+        print(f"Error processing {csv_file}: {e}")
+        continue
 
 if not texts:
-    raise ValueError("No valid (non-empty) text files found in data/silver/books directory.")
+    raise ValueError("No valid (non-empty) content found in CSV files from MinIO gold bucket.")
 
 # Save chunked texts
 os.makedirs("data", exist_ok=True)
@@ -47,13 +75,13 @@ with open("data/chunked_texts.json", "w", encoding="utf-8") as f:
 # Generate and save embeddings
 embeddings = model.encode(texts)
 if embeddings.shape[0] == 0:
-    raise ValueError("Failed to generate embeddings. Ensure text files contain valid content.")
+    raise ValueError("Failed to generate embeddings. Ensure content contains valid text.")
 index = faiss.IndexFlatL2(embeddings.shape[1])
 index.add(embeddings)
 faiss.write_index(index, "data/vector_index.faiss")
 
-# Save metadata
-metadata = {i: source for i, source in enumerate(sources)}
+# Save metadata including text_url
+metadata = {i: {"source": source, "text_url": text_url} for i, (source, text_url) in enumerate(zip(sources, text_urls))}
 with open("data/metadata.json", "w", encoding="utf-8") as f:
     json.dump(metadata, f)
 
