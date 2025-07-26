@@ -182,10 +182,17 @@ services:
     depends_on:
       - marquez-db
     environment:
-      - MARQUEZ_URL=http://marquez:5000
-      - MARQUEZ_JDBC_URL=jdbc:postgresql://marquez-db:5432/marquez
-      - MARQUEZ_JDBC_USERNAME=marquez
-      - MARQUEZ_JDBC_PASSWORD=marquez
+      - MARQUEZ_PORT=5000
+      - MARQUEZ_ADMIN_PORT=5001
+      - MARQUEZ_HOST=localhost
+      - MARQUEZ_API_URL=http://localhost:5000/api/v1
+      - MARQUEZ_DB_HOST=marquez-db
+      - MARQUEZ_DB_PORT=5432
+      - MARQUEZ_DB=marquez
+      - MARQUEZ_DB_USER=marquez
+      - MARQUEZ_DB_PASSWORD=marquez
+      - MARQUEZ_MIGRATE_ON_STARTUP=true
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g -Djava.security.egd=file:/dev/./urandom
     ports:
       - "5000:5000"
       - "5001:5001"
@@ -194,6 +201,25 @@ services:
       interval: 30s
       timeout: 30s
       retries: 10
+  duckdb:
+    image: python:3.10-slim
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+    volumes:
+      - ./src:/app/src
+      - ./sample_config:/app/sample_config
+      - ./.env:/app/.env
+      - ./requirements-duckdb.txt:/app/requirements-duckdb.txt
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "pip install --no-cache-dir -r /app/requirements-duckdb.txt &&
+               tail -f /dev/null"
 volumes:
   minio_data:
   postgres_data:

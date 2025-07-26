@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 import io
 import time
+import json
 
 load_dotenv()
 
@@ -46,15 +47,47 @@ def scrape_gutenberg():
         book_response = requests.get(href)
         print(f"Fetched book page: {href}")
         book_soup = BeautifulSoup(book_response.text, 'html.parser')
+        
         text_link = book_soup.select_one('a[href*=".txt"]')
+        
         if text_link:
             text_url = base_url + text_link['href']
-            text_response = requests.get(text_url)
+            text_response = requests.get(text_url, headers={'Accept-Encoding': 'identity'})
             print(f"Fetched text file: {text_url}")
+
+            # Read the content as binary to preserve the exact bytes
+            content_bytes = text_response.content
+
+            # Convert to string using the correct encoding (e.g., UTF-8), avoiding normalization
+            content = content_bytes.decode('utf-8', errors='replace')
+
+            combined_title = book_soup.select_one('h1') or book_soup.select_one('title')
+            combined_title = combined_title.get_text(strip=True) if combined_title else "Unknown Title"
+
+            # Split combined title to separate title and author
+            if " by " in combined_title:
+                title, author = combined_title.rsplit(" by ", 1)
+                author = author.strip()
+                title = title.strip()
+            else:
+                title = combined_title
+                author = "Unknown Author"
+
+            book_data = {
+                "text_url": text_url,
+                "title": title,
+                "author": author,
+                "content": content,
+            }
+
+            json_data = json.dumps(book_data, ensure_ascii=False)
+            json_bytes = io.BytesIO(json_data.encode('utf-8'))
+            
             client.put_object(
                 config['minio']['bucket_raw'],
-                f"books/{href.split('/')[-1]}.txt",
-                data=io.BytesIO(text_response.content),
-                length=len(text_response.content)
+                f"books/{href.split('/')[-1]}.json",
+                data=json_bytes,
+                length=len(json_data.encode('utf-8')),
+                content_type='application/json'
             )
-            print(f"Uploaded book: books/{href.split('/')[-1]}.txt")
+            print(f"Uploaded book: books/{href.split('/')[-1]}.json")
