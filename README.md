@@ -72,10 +72,10 @@ The following diagram illustrates the architecture of the framework:
 
 ### Installation
 
-- **Clone the Repository**:
+- **Clone the Repository**:   
+   And Checkout to source code
    ```bash
-   git clone https://github.com/Sujangyawali/Data-Scrape-to-RAG.git
-   cd Data-Scrape-to-RAG
+   git clone https://github.com/Sujangyawali/Data-Scrape-to-RAG.git && cd Data-Scrape-to-RAG
    ```
 - **Configure Environment**:
    Create a `.env` file in the project root with Together AI API key and connetion details to connect MINIO.Ycan use existing .env in repo for local run.
