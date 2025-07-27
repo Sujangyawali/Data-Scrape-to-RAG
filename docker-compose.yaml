@@ -51,9 +51,10 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
       - AIRFLOW__CORE__PARALLELISM=2
       - AIRFLOW__CORE__MAX_ACTIVE_RUNS=1
-      - OPENLINEAGE_URL=http://marquez:5000
-      - OPENLINEAGE_NAMESPACE=airflow-etl
       - OPENLINEAGE_DISABLED="false"
+      - OPENLINEAGE_CONFIG=/opt/airflow/sample_config/openlineage.yaml
+      - OPENLINEAGE_PRODUCER=https://github.com/OpenLineage/OpenLineage
+      - OPENLINEAGE_AIRFLOW_DISABLE_FORK=true
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -84,9 +85,10 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
-      - OPENLINEAGE_URL=http://marquez:5000
-      - OPENLINEAGE_NAMESPACE=airflow-etl
       - OPENLINEAGE_DISABLED="false"
+      - OPENLINEAGE_CONFIG=/opt/airflow/sample_config/openlineage.yaml
+      - OPENLINEAGE_PRODUCER=https://github.com/OpenLineage/OpenLineage
+      - OPENLINEAGE_AIRFLOW_DISABLE_FORK=true
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -113,9 +115,10 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=redis://redis:6379/0
       - AIRFLOW__CELERY__BROKER_URL=redis://redis:6379/0
-      - OPENLINEAGE_URL=http://marquez:5000
-      - OPENLINEAGE_NAMESPACE=airflow-etl
       - OPENLINEAGE_DISABLED="false"
+      - OPENLINEAGE_CONFIG=/opt/airflow/sample_config/openlineage.yaml
+      - OPENLINEAGE_PRODUCER=https://github.com/OpenLineage/OpenLineage
+      - OPENLINEAGE_AIRFLOW_DISABLE_FORK=true
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src:/opt/airflow/src
@@ -182,25 +185,40 @@ services:
     depends_on:
       - marquez-db
     environment:
-      - MARQUEZ_PORT=5000
-      - MARQUEZ_ADMIN_PORT=5001
-      - MARQUEZ_HOST=localhost
-      - MARQUEZ_API_URL=http://localhost:5000/api/v1
-      - MARQUEZ_DB_HOST=marquez-db
-      - MARQUEZ_DB_PORT=5432
-      - MARQUEZ_DB=marquez
-      - MARQUEZ_DB_USER=marquez
-      - MARQUEZ_DB_PASSWORD=marquez
+      - MARQUEZ_PORT=8080
+      - MARQUEZ_ADMIN_PORT=8081
+      - MARQUEZ_HOST=0.0.0.0
+      - MARQUEZ_API_URL=http://localhost:8080/api/v1
+      - MARQUEZ_CONFIG=/marquez.yml
       - MARQUEZ_MIGRATE_ON_STARTUP=true
       - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g -Djava.security.egd=file:/dev/./urandom
     ports:
-      - "5000:5000"
-      - "5001:5001"
+      - "5000:8080"
+      - "5001:8081"
+    volumes:
+    - ./marquez.yml:/marquez.yml
+    command: >
+      bash -c "env && java -jar /marquez.jar"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/v1/health || exit 1"]
       interval: 30s
       timeout: 30s
       retries: 10
+  marquez-web:
+    image: marquezproject/marquez-web:latest
+    depends_on:
+      - marquez
+    environment:
+      - MARQUEZ_HOST=marquez
+      - MARQUEZ_PORT=8080
+      - WEB_PORT=3000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   duckdb:
     image: python:3.10-slim
     depends_on:

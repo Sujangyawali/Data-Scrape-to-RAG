@@ -1,0 +1,4 @@
+transport:
+  type: http
+  url: http://marquez:8080
+namespace: scrap-to-rag

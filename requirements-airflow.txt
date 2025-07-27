@@ -1,5 +1,5 @@
 minio
 psycopg2-binary
 apache-airflow-providers-docker
-apache-airflow-providers-openlineage
+apache-airflow-providers-openlineage>=1.8.0
 openlineage-integration-common
