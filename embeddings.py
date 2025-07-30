@@ -17,7 +17,7 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Initialize MinIO client
 client = Minio(
-    'localhost:9000',
+    os.getenv('MINIO_ENDPOINT'),
     access_key=os.getenv('MINIO_ACCESS_KEY'),
     secret_key=os.getenv('MINIO_SECRET_KEY'),
     secure=False
