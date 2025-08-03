@@ -25,7 +25,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='spark_transform_dag',
+    dag_id='spark_transform_dag_deprecated',
     default_args=default_args,
     description='Trigger transform.py bronze_to_silver on pyspark service',
     schedule_interval=None,

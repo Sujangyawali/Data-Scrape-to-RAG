@@ -152,28 +152,29 @@ services:
   #   volumes:
   #     - ollama_data:/root/.ollama
   #   command: serve
-  # pyspark:
-  #   image: bitnami/spark:latest
-  #   depends_on:
-  #     minio:
-  #       condition: service_healthy
-  #   environment:
-  #     - SPARK_MODE=master
-  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
-  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
-  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-  #     - SPARK_SSL_ENABLED=no
-  #   env_file:
-  #     - ./.env
-  #   volumes:
-  #     - ./src:/opt/spark/src
-  #     - ./sample_config:/opt/spark/sample_config
-  #     - ./.env:/opt/spark/.env
-  #     - ./requirements-pyspark.txt:/opt/spark/requirements-pyspark.txt
-  #     - ./data:/opt/spark/data 
-  #   command: >
-  #     bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
-  #                 tail -f /dev/null"
+  pyspark:
+    image: bitnami/spark:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    env_file:
+      - ./.env
+    volumes:
+      - ./src:/opt/spark/src
+      - ./sample_config:/opt/spark/sample_config
+      - ./.env:/opt/spark/.env
+      - ./requirements-pyspark.txt:/opt/spark/requirements-pyspark.txt
+      - ./data:/opt/spark/data 
+      - ./test_logs:/opt/spark/test_logs
+    command: >
+      bash -c "pip install --no-cache-dir -r /opt/spark/requirements-pyspark.txt &&
+                  tail -f /dev/null"
   marquez-db:
     image: postgres:13
     environment:
