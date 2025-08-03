@@ -134,6 +134,7 @@ services:
   app:
     build: .
     container_name: rag_app
+    restart: on-failure
     ports:
       - "8000:8000"  # FastAPI
       - "8501:8501"  # Streamlit

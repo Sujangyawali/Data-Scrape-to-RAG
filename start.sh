@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e  # Exit on any error
+
 # Run embedding preprocessing
 python embeddings.py
 
