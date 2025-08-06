@@ -144,7 +144,6 @@ services:
       - ./api.py:/app/api.py
       - ./embeddings.py:/app/embeddings.py
       - ./data:/app/data
-      - ./start.sh:/app/start.sh
     command: ["/app/start.sh"]
   # ollama:
   #   image: ollama/ollama:latest
