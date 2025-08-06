@@ -78,7 +78,7 @@ The following diagram illustrates the architecture of the framework:
    git clone https://github.com/Sujangyawali/Data-Scrape-to-RAG.git && cd Data-Scrape-to-RAG
    ```
 - **Configure Environment**:
-   Create a `.env` file in the project root with Together AI API key and connetion details to connect MINIO.Ycan use existing .env in repo for local run.
+   Update a `.env` file with Together AI API key.
      ```
     MINIO_ENDPOINT=
     MINIO_ACCESS_KEY=
@@ -91,53 +91,15 @@ The following diagram illustrates the architecture of the framework:
    ```bash
    docker-compose up -d
    ```
-   - Trigger ```scrape``` Dag
-   - create ```data\silver``` directory
-   - on dag script ```Data-Scrape-to-RAG\airflow\dags\transform.py``` update the mount volumes based on your directory
-   - Trigger ```spark_transform_dag``` Dag    
+   **Note:** It might take few time, as it need to build image for app service.
 
-   This will load data into Gold bucket of MinIO
-
-- **Create a Virtual Environment**:
-   ```bash
-   python -m venv venv
-   ```
-   Activate virutal environment
-   ```bash 
-   source venv/bin/activate  
-   # On Windows: venv\Scripts\activate
-   ```
-
-- **Install Dependencies**:   
-   Install the required Python packages:
-   ```bash
-   pip install -r requirements-local.txt
-   ```
-- **Create Vector DB and Embeddings**:   
-   ```bash
-   python embeddings.py
-   ```
+- **Trigger Master Dag**:
+   - Go to airflow UI `http://localhost:8080`
+   - Trigger Master Dag `master`
+ 
    
-
-## Configuration
-
 ### Running the Application
-- **Start the FastAPI Backend**:
-   - In one terminal(after activation virtual environment and instllation libraries), run the backend server:
-     ```bash
-     python api.py
-     ```
-   - This will start the API on `http://localhost:8000`.
-
-- **Start the Streamlit Frontend**:
-   - In another terminal, run the frontend UI:
-     ```bash
-     streamlit run app.py
-     ```
-   - This will start the Streamlit app, typically accessible at `http://localhost:8501`.
-
-- **Access the UI**:
-   - Open a browser and navigate to the Streamlit URL (e.g., `http://localhost:8501`).
+   - After complication of `master` dag, open a browser and navigate to the Streamlit URL (e.g., `http://localhost:8501`).
    - Enter a question in the text input field and click "Submit" to see the answer and sources.
 
 ### Data Analysis with DuckDB
@@ -157,11 +119,9 @@ To enable data lineage tracking in our Airflow environment, we integrated **Open
 
 ## Enhancement
 Future updates to the framework will include:
-1. Containerised entire application (as RAG par is running outside it)
-2. Enhance data processing/Pipeline for multiple stages and orchestrate via airflow
-3. Email and notification services for batch processes
-4. Caching:Implement more advanced caching to improve performance
-5. Stream output in UI
-6. Add testing mechamism
-7. Logging and Auditing for each activity/script
-8. Enhance data lineage service
+1. Email and notification services for batch processes
+2. Caching:Implement more advanced caching to improve performance
+3. Stream output in UI
+4. Add testing mechamism
+5. Logging and Auditing for each activity/script
+6. Enhance data lineage service
