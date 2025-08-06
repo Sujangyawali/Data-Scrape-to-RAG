@@ -1,6 +1,9 @@
 # Use an official Python runtime as the base image
 FROM python:3.11-slim
 
+# Install dos2unix
+RUN apt-get update && apt-get install -y dos2unix
+
 # Set working directory
 WORKDIR /app
 
@@ -16,4 +19,5 @@ EXPOSE 8000 8501
 
 # Copy entrypoint
 COPY start.sh /app/start.sh
+RUN dos2unix /app/start.sh
 RUN chmod +x /app/start.sh
