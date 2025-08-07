@@ -10,7 +10,6 @@ This is a local application designed to answer questions based on a collection o
 [Technologies Used](#technologies-used)\
 [Dependencies (Getting Started)](#dependencies-getting-started)\
 [Installation](#installation)\
-[Configuration](#configuration)\
 [Enhancement](#enhancement)
 
 ## Features
