@@ -29,7 +29,7 @@ This is a local application designed to answer questions based on a collection o
 ## Architecture Diagram
 The following diagram illustrates the architecture of the framework:
 
-![Architecture Diagram](RAG_Arch.png)
+![Architecture Diagram](ArchDiagram.png)
 
 ### Explanation of Architecture
 - **Data Source**: The process begins with raw data scraped from Project Gutenberg, using a custom scraping script.
